@@ -66,9 +66,40 @@ so an effect of the size these models show would need roughly 65 targets to
 separate from zero. Lowering the 10-peptide cutoff would buy those targets at
 the cost of noisier per-target correlations.
 
-These are linear probes on frozen features. A fine-tuned encoder or a non-linear
-head may do better; that is a different experiment, and it should be run against
-these same controls.
+## Is it the probe or the representation?
+
+A random forest on the same features, same splits, averaged over ten forest
+seeds:
+
+| model | ridge | forest | forest sd |
+| --- | ---: | ---: | ---: |
+| target only | +0.000 | +0.000 | 0.000 |
+| peptide only | +0.095 | **+0.102** | 0.015 |
+| target + peptide | +0.093 | +0.085 | 0.025 |
+| target x peptide | +0.071 | +0.072 | 0.034 |
+
+Swapping a linear probe for a forest changes nothing: peptide-only moves from
++0.095 to +0.102, inside the seed noise. Train R2 meanwhile rises from 0.44 to
+0.87, so the forest fits the training pairs far harder and generalises
+identically. The limit is the frozen representation, not the probe.
+
+The ordering is the result worth keeping. The more target information a model is
+given, the lower its mean and the higher its variance across seeds. Paired over
+seeds, the interaction model is 0.030 *behind* peptide-only and ahead on 3 of 10.
+
+A single forest seed is not enough to see this. On seed 42 the interaction model
+scores +0.110 with a bootstrap interval of [+0.017, +0.209], which excludes zero
+and would have been reported as the first positive result. Ten seeds put that
+value near the top of its own noise distribution. Seed variation is checked here
+for that reason.
+
+Trees are not additive, so a forest on concatenated features is target-
+conditioned where ridge is not: the rank correlation between two targets'
+orderings is 0.82 rather than 1.000000. It still does not beat peptide-only.
+
+Neither model class has been fine-tuned, and no model here uses cross-attention
+between target and peptide residues rather than pooled vectors. Either could do
+better, and should be run against these same controls.
 
 Two structural checks hold exactly, which is the evidence that the harness
 measures what it claims. The target-only model scores per-target +0.000, because

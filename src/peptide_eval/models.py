@@ -57,3 +57,44 @@ class RidgeModel:
     def predict(self, target_vectors, peptide_vectors):
         x = self.scaler.transform(features(self.kind, target_vectors, peptide_vectors))
         return self.ridge.predict(x)
+
+
+class ForestModel:
+    """Random forest on the same features, to separate the representation from the probe.
+
+    A ridge probe failing says the features do not encode binding *linearly*. A
+    forest can express interactions the linear model cannot, so if the features
+    carry target-conditioned signal in a usable form, this is where it appears.
+
+    One structural difference matters when reading the results. A linear model on
+    concatenated features is additive, so its target term is a constant offset
+    within a target and its peptide ranking cannot depend on which target it is.
+    A tree splits hierarchically: it can branch on a target coordinate and then
+    rank peptides differently inside each branch. So `concat` is target-
+    conditioned here even without the explicit product term, and the 1.000000
+    check that holds for ridge does not apply.
+    """
+
+    # Features outnumber training pairs, so each split considers a square-root
+    # subset rather than all of them: the default of every feature would make
+    # each tree see the same few dominant columns and correlate the ensemble.
+    def __init__(self, kind: str, trees: int = 300, seed: int = 42):
+        from sklearn.ensemble import RandomForestRegressor
+
+        self.kind = kind
+        self.forest = RandomForestRegressor(
+            n_estimators=trees,
+            max_features="sqrt",
+            min_samples_leaf=2,
+            random_state=seed,
+            n_jobs=-1,
+        )
+
+    def fit(self, target_vectors, peptide_vectors, y):
+        # No scaling: a tree splits on thresholds, so any monotone rescaling of
+        # a feature leaves every split it could make unchanged.
+        self.forest.fit(features(self.kind, target_vectors, peptide_vectors), y)
+        return self
+
+    def predict(self, target_vectors, peptide_vectors):
+        return self.forest.predict(features(self.kind, target_vectors, peptide_vectors))
