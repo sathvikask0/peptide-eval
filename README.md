@@ -41,6 +41,43 @@ does not know a held-out target's mean and would have to predict it from the
 target sequence. The claim here is about the metric, not about that paper's
 models.
 
+## What the models do
+
+Ridge probes on frozen ESM-2 650M embeddings, fitted on 122 training targets and
+scored on the 51 held-out ones. Each model differs only in what it is allowed to
+see.
+
+| model | pooled | per-target | 95% CI | enrichment |
+| --- | ---: | ---: | :---: | ---: |
+| target only | +0.102 | +0.000 | [+0.000, +0.000] | 1.00x |
+| peptide only | +0.230 | +0.095 | [-0.009, +0.201] | 1.46x |
+| target + peptide | +0.148 | +0.093 | [-0.011, +0.191] | 1.47x |
+| target x peptide | +0.187 | +0.071 | [-0.040, +0.173] | 1.24x |
+
+Every interval crosses zero. On 2,000 bootstrap resamples over targets, no model
+ranks peptides within an unseen target measurably better than chance, and no
+model is distinguishable from any other. The model that sees both target and
+peptide is not distinguishable from the one that sees only the peptide, and
+ESM-2's peptide embedding is not distinguishable from the peptide's length.
+
+Read carefully, this says we could not detect target-conditioned ranking, not
+that none exists. 51 held-out targets give a confidence interval about 0.10 wide,
+so an effect of the size these models show would need roughly 65 targets to
+separate from zero. Lowering the 10-peptide cutoff would buy those targets at
+the cost of noisier per-target correlations.
+
+These are linear probes on frozen features. A fine-tuned encoder or a non-linear
+head may do better; that is a different experiment, and it should be run against
+these same controls.
+
+Two structural checks hold exactly, which is the evidence that the harness
+measures what it claims. The target-only model scores per-target +0.000, because
+its prediction cannot vary within a target. And a linear model on concatenated
+features predicts `w_t.x_t + w_p.x_p`, so for a fixed target the first term is a
+constant offset and the peptide ordering is the same for every target: measured
+across two different targets, the rank correlation between its orderings is
+1.000000. The interaction model, which has an `x_t * x_p` term, gives 0.376.
+
 ## Data
 
 PPIKB, filtered to what a protein language model can actually read. 21,845 rows
@@ -86,10 +123,9 @@ pass.
 
 ## Status
 
-Controls, metrics and homology-clustered splits are done and reproducible.
-Trained baselines (ESM-2 embeddings plus a regressor) are next. A PepPrCLIP
-evaluation follows if the gated checkpoint is approved; nothing above depends
-on it.
+The benchmark, the controls, the splits and the ESM-2 ridge baselines are done
+and reproducible end to end. A PepPrCLIP evaluation follows if the gated
+checkpoint is approved; nothing above depends on it.
 
 ## Limits
 
