@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Peptide Eval</title>
+<meta name="description" content="A held-out-target benchmark for peptide binding prediction, and what it found.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129516;</text></svg>">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#faf8f5; --panel:#ffffff; --fg:#1c1f21; --muted:#5d6468; --faint:#8b9397;
+  --rule:#e3ddd4; --accent:#0f6156; --accent-soft:#e6f0ed; --warn:#8a4b2a; --warn-soft:#f7ece5;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+  --serif:'Newsreader',Georgia,serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#14161a; --panel:#1b1e23; --fg:#e8e6e2; --muted:#a2a9ae; --faint:#79818a;
+  --rule:#2b3038; --accent:#57bda9; --accent-soft:#16302c; --warn:#d99a6c; --warn-soft:#2e2118;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#14161a; --panel:#1b1e23; --fg:#e8e6e2; --muted:#a2a9ae; --faint:#79818a;
+  --rule:#2b3038; --accent:#57bda9; --accent-soft:#16302c; --warn:#d99a6c; --warn-soft:#2e2118;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--serif);
+  font-size:18px;line-height:1.62;-webkit-font-smoothing:antialiased}
+.wrap{max-width:760px;margin:0 auto;padding-block:clamp(2.5rem,7vw,5rem);padding-left:20px;padding-right:20px}
+h1{font-size:clamp(2.1rem,6vw,3.2rem);line-height:1.08;margin:0 0 .5rem;font-weight:600;
+  letter-spacing:-.02em;text-wrap:balance}
+.sub{font-size:1.15rem;color:var(--muted);margin:0 0 2.5rem;text-wrap:balance}
+h2{font-size:1.55rem;font-weight:600;margin:3.2rem 0 .3rem;letter-spacing:-.01em;text-wrap:balance}
+h2 .num{font-family:var(--mono);font-size:.72rem;color:var(--accent);display:block;
+  letter-spacing:.14em;margin-bottom:.45rem;font-weight:500}
+h3{font-size:1.1rem;font-weight:600;margin:2rem 0 .2rem}
+p{margin:.85rem 0}
+a{color:var(--accent);text-underline-offset:3px}
+code{font-family:var(--mono);font-size:.84em;background:var(--accent-soft);
+  padding:.12em .38em;border-radius:3px}
+hr{border:0;border-top:1px solid var(--rule);margin:3rem 0}
+.lede{font-size:1.2rem;border-left:3px solid var(--accent);padding-left:1.15rem;color:var(--fg)}
+.callout{background:var(--panel);border:1px solid var(--rule);border-radius:8px;
+  padding:1.1rem 1.3rem;margin:1.6rem 0}
+.callout.warn{background:var(--warn-soft);border-color:var(--warn)}
+.callout h4{margin:0 0 .35rem;font-size:.74rem;font-family:var(--mono);letter-spacing:.13em;
+  text-transform:uppercase;color:var(--warn)}
+.callout p{margin:.4rem 0}
+.callout.note h4{color:var(--accent)}
+.scroll{overflow-x:auto;margin:1.5rem 0;border:1px solid var(--rule);border-radius:8px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-family:var(--mono);font-size:.82rem;
+  font-variant-numeric:tabular-nums}
+th,td{padding:.6rem .85rem;text-align:right;white-space:nowrap;border-bottom:1px solid var(--rule)}
+th:first-child,td:first-child{text-align:left}
+thead th{font-size:.68rem;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);font-weight:500}
+tbody tr:last-child td{border-bottom:0}
+tr.key td{background:var(--accent-soft);font-weight:500}
+tr.rule-top td{border-top:2px solid var(--rule)}
+.big{display:flex;flex-wrap:wrap;gap:1px;background:var(--rule);border:1px solid var(--rule);
+  border-radius:8px;overflow:hidden;margin:1.8rem 0}
+.big div{background:var(--panel);padding:1.1rem 1.2rem;flex:1 1 150px;min-width:0}
+.big .v{font-family:var(--mono);font-size:1.75rem;font-weight:500;letter-spacing:-.02em;
+  color:var(--accent);font-variant-numeric:tabular-nums}
+.big .k{font-size:.78rem;color:var(--muted);margin-top:.2rem;line-height:1.35;font-family:var(--serif)}
+footer{margin-top:4rem;padding-top:1.5rem;border-top:1px solid var(--rule);
+  font-size:.88rem;color:var(--faint)}
+ul{padding-left:1.15rem}li{margin:.4rem 0}
+.tag{font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--faint);border:1px solid var(--rule);border-radius:99px;padding:.18em .7em;
+  display:inline-block;margin-bottom:1rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<span class="tag">Negative result &middot; September 2026</span>
+
+<h1>Nothing here can rank peptides for a protein it hasn&rsquo;t seen</h1>
+<p class="sub">A held-out-target benchmark for peptide binding, the controls that make it
+falsifiable, and the finding that the standard metric rewards a model which ranks nothing at all.</p>
+
+<p class="lede">The published leave-target-out result for this task is a Spearman
+correlation of 0.530. A model that is structurally incapable of ranking peptides
+scores 0.678 on the same metric.</p>
+
+<h2><span class="num">01</span>The question, and the metric that dodges it</h2>
+
+<p>Given one protein and a shortlist of peptides, which peptides bind tightest? That
+is the question a screen actually asks, because you hold one target and a fixed
+number of wells.</p>
+
+<p>Published benchmarks answer a different question. They pool every held-out pair
+into one correlation, which sums two abilities: knowing which <em>proteins</em> bind
+tightly in general, and knowing which <em>peptides</em> suit a particular protein. Only
+the second is useful.</p>
+
+<p>In this dataset 44.5% of the affinity variance lies between targets rather than
+within them. So nearly half the signal is available to a model that never looks
+at the peptide.</p>
+
+<h3>Controls, on 51 held-out targets</h3>
+<div class="scroll"><table>
+<thead><tr><th>control</th><th>pooled</th><th>per&#8209;target</th><th>enrichment</th><th>skill</th></tr></thead>
+<tbody>
+<tr class="key"><td>peptide-blind oracle</td><td>+0.678</td><td>+0.000</td><td>1.00&times;</td><td>&minus;0.055</td></tr>
+<tr><td>peptide length alone</td><td>+0.320</td><td>+0.052</td><td>1.19&times;</td><td>&minus;10.449</td></tr>
+<tr><td>training mean</td><td>&mdash;</td><td>+0.000</td><td>1.00&times;</td><td>&minus;0.778</td></tr>
+<tr><td>random</td><td>&minus;0.046</td><td>&minus;0.052</td><td>0.97&times;</td><td>&minus;6.317</td></tr>
+<tr class="rule-top"><td>perfect (ceiling)</td><td>+1.000</td><td>+1.000</td><td>4.47&times;</td><td>+1.000</td></tr>
+</tbody></table></div>
+
+<p>The oracle is handed each held-out target&rsquo;s own mean affinity. It gives every
+peptide for that target an identical score, so it cannot order them &mdash; and its
+per-target correlation is exactly zero, as it must be. On the pooled metric it
+scores 0.678.</p>
+
+<p>Peptide length is the sharper result. One integer per peptide, carrying nothing
+whatever about the protein, unable even to distinguish two peptides of equal
+length. It scores 0.320 pooled. The published 0.530 sits between the two.</p>
+
+<div class="callout note">
+<h4>What this does and does not claim</h4>
+<p>The oracle is an upper bound, not an achievable score: a deployed model does not
+know a held-out target&rsquo;s mean and would have to predict it from the sequence.
+The claim is about the metric, not about any particular paper&rsquo;s models.</p>
+</div>
+
+<h2><span class="num">02</span>The benchmark</h2>
+
+<p>PPIKB, filtered to what a protein language model can read at all &mdash; standard
+residues, linear backbones, no modified positions, a usable Kd, Ki or IC50.
+Repeat measurements of a pair collapse to their geometric mean.</p>
+
+<div class="big">
+<div><div class="v">21,845</div><div class="k">measurements in the release</div></div>
+<div><div class="v">9,078</div><div class="k">unique pairs after filtering</div></div>
+<div><div class="v">203</div><div class="k">targets with &ge;10 peptides</div></div>
+<div><div class="v">101</div><div class="k">homology clusters</div></div>
+</div>
+
+<h3>Held out means the family, not the sequence</h3>
+
+<p>Published leave-target-out splits exclude by exact sequence. A two-residue
+variant of a training target binds much the same peptides, so that is not a
+holdout. Targets here are clustered by local-alignment identity and the split
+moves whole clusters: 122 / 30 / 51 targets, and no test&ndash;train pair meets the
+relatedness rule.</p>
+
+<p>Percent identity alone does not separate related proteins from unrelated ones.
+Random target pairs in this dataset have a median best-local-alignment identity
+of <strong>0.33</strong>, reaching 0.83. What separates them is coverage: those alignments
+span a median of 8% of the shorter sequence. Requiring 30% identity across 50%
+coverage calls 0.8% of random pairs related, while an identical sequence and a
+20%-mutated copy both pass.</p>
+
+<div class="callout warn">
+<h4>A bug this caught</h4>
+<p>The first clustering rule used global alignment normalised by the shorter
+sequence. On targets spanning 72 to 7,073 residues it called 23% of random pairs
+related and chained all 203 into a single cluster, putting every target in the
+training split. Measuring the rule against random pairs is what found it.</p>
+</div>
+
+<h2><span class="num">03</span>Four models, none of which use the protein</h2>
+
+<p>Ridge probes on frozen ESM-2 650M embeddings, differing only in what each is
+permitted to see.</p>
+
+<div class="scroll"><table>
+<thead><tr><th>model</th><th>pooled</th><th>per&#8209;target</th><th>95% CI</th></tr></thead>
+<tbody>
+<tr><td>target only</td><td>+0.102</td><td>+0.000</td><td>[+0.000, +0.000]</td></tr>
+<tr><td>peptide only</td><td>+0.230</td><td>+0.095</td><td>[&minus;0.009, +0.201]</td></tr>
+<tr><td>target + peptide</td><td>+0.148</td><td>+0.093</td><td>[&minus;0.011, +0.191]</td></tr>
+<tr><td>target &times; peptide</td><td>+0.187</td><td>+0.071</td><td>[&minus;0.040, +0.173]</td></tr>
+</tbody></table></div>
+
+<p>Every interval crosses zero. No model beats chance, and none is distinguishable
+from any other. Seeing the protein as well as the peptide adds nothing over
+seeing only the peptide, and ESM-2&rsquo;s peptide embedding is not distinguishable
+from the peptide&rsquo;s length.</p>
+
+<h3>Two structural checks hold exactly</h3>
+
+<p>The target-only model scores per-target <code>+0.000</code>, because its prediction cannot
+vary within a target. And a linear model on concatenated features predicts
+<code>w&#8348;&middot;x&#8348; + w&#8346;&middot;x&#8346;</code>, so for a fixed target the first term is a constant offset
+and the peptide ordering is identical for every protein. Measured across two
+different targets, the rank correlation between its orderings is
+<strong>1.000000</strong>. The interaction model, which has an <code>x&#8348; &odot; x&#8346;</code> term,
+gives 0.376.</p>
+
+<h2><span class="num">04</span>Ruling out the obvious objections</h2>
+
+<h3>It is not the linear probe</h3>
+
+<p>A random forest on the same features, ten seeds:</p>
+
+<div class="scroll"><table>
+<thead><tr><th>model</th><th>ridge</th><th>forest</th><th>seed sd</th><th>train R&sup2;</th></tr></thead>
+<tbody>
+<tr><td>target only</td><td>+0.000</td><td>+0.000</td><td>0.000</td><td>0.43</td></tr>
+<tr class="key"><td>peptide only</td><td>+0.095</td><td>+0.102</td><td>0.015</td><td>0.87</td></tr>
+<tr><td>target + peptide</td><td>+0.093</td><td>+0.085</td><td>0.025</td><td>0.91</td></tr>
+<tr><td>target &times; peptide</td><td>+0.071</td><td>+0.072</td><td>0.034</td><td>0.92</td></tr>
+</tbody></table></div>
+
+<p>Train R&sup2; nearly doubles; held-out ranking does not move. The forest fits the
+training pairs far harder and generalises identically. And the ordering is the
+finding: the more target information a model is given, the lower its mean and
+the higher its variance.</p>
+
+<div class="callout warn">
+<h4>A false positive this caught</h4>
+<p>On seed 42 alone the interaction forest scored +0.110 with a bootstrap interval
+of [+0.017, +0.209], excluding zero. It would have been reported as the first
+real signal. Ten seeds put that value near the top of its own noise
+distribution, and paired against peptide-only it is behind on 7 of 10.
+Bootstrapping over targets cannot see this, because it resamples targets while
+holding the fitted model fixed. Only refitting does.</p>
+</div>
+
+<h3>It is not the pooling</h3>
+
+<p>Mean-pooling an 888-residue protein into 1,280 numbers averages a binding site
+&mdash; perhaps ten residues &mdash; over the whole sequence. One cross-attention block,
+peptide residues as queries and target residues as keys, removes that step.</p>
+
+<div class="scroll"><table>
+<thead><tr><th>seed</th><th>correct target</th><th>wrong target</th><th>difference</th></tr></thead>
+<tbody>
+<tr><td>0</td><td>+0.152</td><td>+0.147</td><td>+0.005</td></tr>
+<tr><td>1</td><td>+0.123</td><td>+0.104</td><td>+0.019</td></tr>
+<tr><td>2</td><td>+0.112</td><td>+0.098</td><td>+0.014</td></tr>
+<tr class="key rule-top"><td>mean</td><td>+0.129</td><td>+0.116</td><td>+0.013</td></tr>
+</tbody></table></div>
+
+<p>It scores highest of anything here &mdash; and substituting a <em>different protein&rsquo;s</em>
+residues costs 0.013, less than the 0.017 spread between seeds. Whatever it
+gained is not target information.</p>
+
+<p>The attention weights say why. On an 888-residue target their entropy is 6.743
+nats against a uniform maximum of 6.789 &mdash; an effective <strong>849 residues attended
+out of 888</strong>. The most-weighted residue receives 0.0056 where uniform gives
+0.0011. Different peptides&rsquo; attention maps correlate at <strong>0.993</strong>, so the
+weighting is not peptide-specific either.</p>
+
+<p>Given freedom to look anywhere, the model learned to look everywhere equally.
+Attention did not fail to recover what pooling discarded. Attention re-derived
+pooling.</p>
+
+<h3>It is not the encoder being frozen</h3>
+
+<p>Unfreezing ESM-2&rsquo;s top layers under the same head made it worse, at both an
+aggressive and a gentle setting.</p>
+
+<div class="scroll"><table>
+<thead><tr><th>setting</th><th>per&#8209;target</th><th>wrong target</th></tr></thead>
+<tbody>
+<tr><td>frozen (reference)</td><td>+0.129</td><td>+0.116</td></tr>
+<tr><td>2 layers, lr 1e&minus;5</td><td>+0.054</td><td>+0.059</td></tr>
+<tr><td>1 layer, lr 2e&minus;6, seed 0</td><td>+0.042</td><td>+0.039</td></tr>
+<tr><td>1 layer, lr 2e&minus;6, seed 1</td><td>+0.101</td><td>+0.086</td></tr>
+</tbody></table></div>
+
+<p>Validation peaked at epoch one or two and declined: 40.7M trainable parameters
+against 3,788 training pairs. At the aggressive setting the model scores
+<em>higher with the wrong protein</em> than the right one.</p>
+
+<h2><span class="num">05</span>Is 122 targets simply too few?</h2>
+
+<p>If the signal were present but under-trained, adding targets should grow it. The
+quantity to watch is not the raw score &mdash; most of which comes from the peptide
+path and does not depend on target count &mdash; but the gap between scoring a
+held-out target with its own residues and with another&rsquo;s. That difference is
+target information and nothing else.</p>
+
+<div class="scroll"><table>
+<thead><tr><th>training targets</th><th>pairs</th><th>raw score</th><th>target signal</th></tr></thead>
+<tbody>
+<tr><td>30</td><td>1,070</td><td>+0.098</td><td>+0.002 &plusmn; 0.013</td></tr>
+<tr><td>60</td><td>1,714</td><td>+0.091</td><td>+0.007 &plusmn; 0.022</td></tr>
+<tr><td>90</td><td>2,748</td><td>+0.067</td><td>+0.002 &plusmn; 0.018</td></tr>
+<tr><td>122</td><td>3,788</td><td>+0.116</td><td>+0.012 &plusmn; 0.015</td></tr>
+</tbody></table></div>
+
+<p>Five seeds each. Four times the targets moves the signal by +0.010 against a
+seed spread of &plusmn;0.016, and the trend is not monotone.</p>
+
+<div class="callout warn">
+<h4>This experiment is weaker than it looks</h4>
+<p>The range is 4&times;. Scaling effects are typically log-linear, so a requirement of
+100&times; more data would be invisible here. At a standard error near 0.007 per
+point it could only have detected a signal of about 0.015. It did not rule out a
+data problem; it failed to find one in a range too narrow to look.</p>
+</div>
+
+<h2><span class="num">06</span>What the evidence actually supports</h2>
+
+<p>It is tempting to conclude that frozen ESM-2 features do not encode
+peptide&ndash;protein binding. The evidence does not support that. It supports
+something narrower and more useful: <strong>this dataset cannot answer the
+question.</strong></p>
+
+<p>122 targets is very few from which to learn a function over proteins. And the
+task as constructed is harder than the one anyone cares about. Within a target,
+peptides are far more similar to one another (median 2-mer overlap 0.200) than
+peptides drawn from different targets (0.000). <strong>46 of the 203 targets are
+essentially one lead peptide and its point mutants.</strong></p>
+
+<p>For those, &ldquo;rank the peptides for this protein&rdquo; means &ldquo;predict which
+single-residue substitution binds tighter&rdquo; &mdash; a &Delta;&Delta;G problem, and a
+much harder one than <em>does this peptide bind this protein at all</em>, which is what
+sequence-based binder retrieval is usually asked to do.</p>
+
+<p>Those are properties of the data, not of the encoder.</p>
+
+<div class="callout note">
+<h4>What survives regardless</h4>
+<p>The metric result stands independent of data volume. A peptide-blind oracle
+scores 0.678 where the published number is 0.530, and a model that ranks nothing
+cannot be evidence of ranking. That is a fact about how the field reports this
+task.</p>
+</div>
+
+<h2><span class="num">07</span>What would move it</h2>
+
+<ul>
+<li><strong>More targets, not more model.</strong> Every architectural direction here is
+exhausted; the data axis is not. Peptide&ndash;MHC binding offers hundreds of
+thousands of measured pairs with genuinely diverse peptides rather than
+mutational series &mdash; though MHC alleles are homologous, so it buys depth per
+target and little target diversity.</li>
+<li><strong>Separate the two tasks.</strong> Ranking diverse peptides against a target and
+ranking point mutants of a lead are different problems and should not share a
+metric.</li>
+<li><strong>Report both numbers.</strong> Pooled correlation alongside a per-target one, always,
+with a control that cannot rank.</li>
+</ul>
+
+<hr>
+
+<h2><span class="num">08</span>Method notes</h2>
+
+<p><strong>Metrics.</strong> Per-target Spearman, averaged over held-out targets; a prediction
+constant within a target scores 0 rather than undefined. Top-20% enrichment with
+shortlist <code>ceil(0.2n)</code>, so the random expectation is <code>k/n</code> and not 0.2.
+Skill is mean absolute error against the target&rsquo;s own median affinity, a
+deliberately generous reference that uses labels a deployed model would not
+have. Every model in this report scores below zero on it.</p>
+
+<p><strong>Calibration.</strong> Hit-rate calibration is not possible: PPIKB collects published
+binders and has no unbiased negative screen, so a probability fitted against
+synthetic negatives reports the synthetic ratio. Scale calibration &mdash; whether a
+predicted affinity lands on the right part of the scale &mdash; is defined without
+negatives, and is what &ldquo;skill&rdquo; measures.</p>
+
+<p><strong>Encoding.</strong> ESM-2 650M, mean-pooled over residues rather than the start token,
+which was never trained to summarise. The 37 targets longer than the 1,022-residue
+context are chunked and pooled, not truncated.</p>
+
+<p><strong>Pooled Kd, Ki and IC50.</strong> As the published benchmarks do. They are not the
+same quantity, and this ceiling belongs to the dataset rather than to any model.</p>
+
+<footer>
+<p>Code, data pipeline and every number above:
+<a href="https://github.com/sathvikask0/peptide-eval">github.com/sathvikask0/peptide-eval</a>.
+Each table is regenerated from the raw release by a script in <code>scripts/</code>;
+none is transcribed by hand.</p>
+<p>Comparison figure of 0.530 from
+<a href="https://arxiv.org/abs/2608.30175">arXiv:2608.30175</a>. Data from the
+<a href="https://www.biorxiv.org/content/10.1101/2025.06.09.658607v1.full">PPIKB</a> release.</p>
+</footer>
+
+</div>
+</body>
+</html>
