@@ -97,9 +97,39 @@ Trees are not additive, so a forest on concatenated features is target-
 conditioned where ridge is not: the rank correlation between two targets'
 orderings is 0.82 rather than 1.000000. It still does not beat peptide-only.
 
-Neither model class has been fine-tuned, and no model here uses cross-attention
-between target and peptide residues rather than pooled vectors. Either could do
-better, and should be run against these same controls.
+## Was it the pooling?
+
+Mean-pooling an 888-residue protein into 1280 numbers averages a binding site,
+which is a handful of residues, over the whole sequence. That is the obvious
+explanation for why the target adds nothing, so it was tested: one cross-
+attention block with peptide residues as queries and target residues as keys, no
+pooling of the target at all, selected on validation ranking.
+
+It scores highest of anything here, +0.129 against the ablation's +0.101. But
+the control settles it. Feeding each held-out target a *different* protein's
+residues should collapse a model that uses the target:
+
+| seed | correct target | wrong target |
+| ---: | ---: | ---: |
+| 0 | +0.152 | +0.147 |
+| 1 | +0.123 | +0.104 |
+| 2 | +0.112 | +0.098 |
+| mean | **+0.129** | **+0.116** |
+
+The drop is 0.013, smaller than the 0.017 spread between seeds. The model scores
+almost as well on the wrong protein as the right one, so whatever it gained over
+the ablation is not target information: it is capacity on the peptide path.
+
+Pooling was not the reason. Giving a model direct residue-level access to the
+correct target buys it nothing over the incorrect one. Three seeds, which is
+thin, but the pattern holds in each of them.
+
+Every model in this repository now fails the same way, at three levels of
+capacity and two of granularity: linear, ensemble, and attention; pooled and
+per-residue. None uses the identity of the protein it is binding to.
+
+No encoder here has been fine-tuned. That is the remaining untested direction,
+and it should be run against these same controls.
 
 Two structural checks hold exactly, which is the evidence that the harness
 measures what it claims. The target-only model scores per-target +0.000, because
