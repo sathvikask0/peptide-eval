@@ -14,21 +14,27 @@ and a shortlist to narrow.
 within them. So a model can score well on a pooled correlation while being
 unable to order peptides at all.
 
-Measured against an oracle that is handed each held-out target's own mean
-affinity, and is therefore structurally incapable of ranking peptides:
+Measured on 51 held-out targets in 38 homology clusters, against an oracle that
+is handed each target's own mean affinity and is therefore structurally
+incapable of ranking peptides:
 
-| control | pooled Spearman | per-target Spearman | skill |
-| --- | ---: | ---: | ---: |
-| peptide-blind oracle (target mean) | **+0.663** | **+0.000** | -0.046 |
-| global mean | undefined | +0.000 | -0.862 |
-| random | +0.011 | -0.004 | -6.079 |
-| perfect | +1.000 | +1.000 | +1.000 |
+| control | pooled | per-target | enrichment | skill |
+| --- | ---: | ---: | ---: | ---: |
+| peptide-blind oracle (target mean) | **+0.678** | **+0.000** | 1.00x | -0.055 |
+| peptide length alone | **+0.320** | +0.052 | 1.19x | -10.449 |
+| train mean (deployable constant) | undefined | +0.000 | 1.00x | -0.778 |
+| random | -0.046 | -0.052 | 0.97x | -6.317 |
+| perfect (ceiling) | +1.000 | +1.000 | 4.47x | +1.000 |
 
 The published leave-target-out result for this task is a pooled Spearman of
 0.530 ([arXiv 2608.30175](https://arxiv.org/abs/2608.30175)). A model that
 cannot rank peptides at all scores 0.663 on that metric, so the published number
 sits below the peptide-blind ceiling and is not evidence of peptide-ranking
 ability.
+
+Peptide length is the sharper result. It is one integer per peptide, carries no
+information about the target at all, and cannot express a preference between two
+peptides of equal length. It scores +0.320 pooled.
 
 The oracle is an upper bound rather than an achievable score: a deployed model
 does not know a held-out target's mean and would have to predict it from the
@@ -65,12 +71,25 @@ uv run --with pandas --with openpyxl --with numpy --with scipy --with pyarrow \
   exclude by exact sequence only, which lets a near-copy of a test target sit in
   training.
 
+## Splits
+
+203 targets fall into 101 homology clusters by local-alignment identity with a
+coverage requirement. Whole clusters go to train / validation / test at
+122 / 30 / 51 targets. No test-train pair meets the relatedness rule; the
+closest surviving pair is 46.6% identity over 49.2% coverage.
+
+Percent identity alone does not separate related proteins from unrelated ones
+here: random target pairs have a median best-local-alignment identity of 0.33.
+What separates them is coverage, at a median of 0.08. Requiring both calls 0.8%
+of random pairs related while an identical sequence and a 20%-mutated copy both
+pass.
+
 ## Status
 
-Controls and metrics are done and reproducible. Homology-clustered splits are
-written but not yet run. Trained baselines (ESM-2 embeddings plus a regressor)
-and a PepPrCLIP evaluation are next; the PepPrCLIP checkpoint is gated and the
-access request is pending.
+Controls, metrics and homology-clustered splits are done and reproducible.
+Trained baselines (ESM-2 embeddings plus a regressor) are next. A PepPrCLIP
+evaluation follows if the gated checkpoint is approved; nothing above depends
+on it.
 
 ## Limits
 

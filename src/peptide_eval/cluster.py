@@ -10,11 +10,22 @@ from __future__ import annotations
 import numpy as np
 from Bio import Align
 
-# Pairwise alignment over every pair is wasteful when most pairs are unrelated.
-# Two sequences that share almost no 3-mers cannot align above any threshold we
-# care about, so they are ruled out before alignment rather than by it.
+# Two sequences sharing almost no 3-mers cannot align well, so they are ruled
+# out before alignment rather than by it. This is an optimisation; the identity
+# rule below is the similarity measure.
 KMER = 3
 PREFILTER = 0.05
+
+# Percent identity on its own does not separate related proteins from unrelated
+# ones. Measured on random target pairs from this dataset, the identity of the
+# best local alignment has a median of 0.33 and reaches 0.83, because a short
+# high-scoring stretch can always be found somewhere. What distinguishes the
+# random pairs is that those stretches are short: their alignments cover a
+# median of 8% of the shorter sequence. Requiring both a high identity and a
+# long alignment calls 0.8% of random pairs related, while an identical
+# sequence and a 20%-mutated copy both still pass.
+MIN_IDENTITY = 0.30
+MIN_COVERAGE = 0.50
 
 
 def _kmers(sequence: str) -> set[str]:
@@ -23,29 +34,41 @@ def _kmers(sequence: str) -> set[str]:
 
 def _aligner() -> Align.PairwiseAligner:
     aligner = Align.PairwiseAligner(scoring="blastp")
-    aligner.mode = "global"
+    # Local, not global: these targets run from 72 to 7,073 residues, and a
+    # global alignment of a domain against a large protein is dominated by the
+    # gaps needed to span it rather than by the homology we are looking for.
+    aligner.mode = "local"
     return aligner
 
 
-def identity(a: str, b: str, aligner: Align.PairwiseAligner) -> float:
-    """Fraction of the shorter sequence that aligns to an identical residue.
-
-    Normalising by the shorter sequence means a short domain fully contained in
-    a long protein counts as related, which is the behaviour we want: the domain
-    is what binds the peptide.
-    """
+def similarity(a: str, b: str, aligner: Align.PairwiseAligner) -> tuple[float, float]:
+    """Identity within the aligned region, and how much of the shorter sequence it covers."""
     alignment = aligner.align(a, b)[0]
-    matches = sum(x == y for x, y in zip(*alignment))
-    return matches / min(len(a), len(b))
+    blocks_a, blocks_b = alignment.aligned
+    aligned_length = sum(end - start for start, end in blocks_a)
+    if aligned_length == 0:
+        return 0.0, 0.0
+    matches = sum(
+        a[start_a + offset] == b[start_b + offset]
+        for (start_a, end_a), (start_b, _) in zip(blocks_a, blocks_b)
+        for offset in range(end_a - start_a)
+    )
+    return matches / aligned_length, aligned_length / min(len(a), len(b))
 
 
-def cluster(sequences: list[str], threshold: float = 0.30) -> dict[str, int]:
-    """Single-linkage connected components at a sequence-identity threshold.
+def related(a: str, b: str, aligner: Align.PairwiseAligner) -> bool:
+    identity, coverage = similarity(a, b, aligner)
+    return identity >= MIN_IDENTITY and coverage >= MIN_COVERAGE
 
-    Single linkage is deliberate and conservative: it merges two clusters when
-    any pair across them is similar, so it errs towards declaring targets
-    related. For a holdout that is the safe direction to err in, because the
-    failure it prevents is silently testing on a near-copy of a training target.
+
+def cluster(sequences: list[str]) -> dict[str, int]:
+    """Single-linkage connected components over the relatedness rule.
+
+    Single linkage merges two clusters when any pair across them is related, so
+    it errs towards declaring targets related. For a holdout that is the safe
+    direction: the failure it prevents is silently testing on a near-copy of a
+    training target. It is also the reason the rule above has to be strict, as
+    single linkage will chain a whole dataset together through a permissive one.
     """
     kmer_sets = [_kmers(s) for s in sequences]
     aligner = _aligner()
@@ -64,7 +87,7 @@ def cluster(sequences: list[str], threshold: float = 0.30) -> dict[str, int]:
             shared = len(kmer_sets[i] & kmer_sets[j])
             if shared / max(1, min(len(kmer_sets[i]), len(kmer_sets[j]))) < PREFILTER:
                 continue
-            if identity(sequences[i], sequences[j], aligner) >= threshold:
+            if related(sequences[i], sequences[j], aligner):
                 parent[find(i)] = find(j)
 
     labels, assignment = {}, {}
@@ -79,9 +102,10 @@ def cluster(sequences: list[str], threshold: float = 0.30) -> dict[str, int]:
 def split_by_cluster(assignment: dict[str, int], fractions=(0.6, 0.15, 0.25), seed: int = 42):
     """Assign whole clusters to train / validation / test.
 
-    Clusters are shuffled and taken in order until each split has its share of
-    *targets*, not of clusters, because cluster sizes are uneven and it is the
-    target count that determines how many held-out rankings we can score.
+    Quotas are in targets rather than clusters, because cluster sizes are uneven
+    and it is the target count that sets how many held-out rankings we can
+    score. Each cluster goes to whichever split is furthest below its quota, so
+    one large cluster cannot swamp a split.
     """
     sizes: dict[int, int] = {}
     for cluster_id in assignment.values():
@@ -91,18 +115,13 @@ def split_by_cluster(assignment: dict[str, int], fractions=(0.6, 0.15, 0.25), se
     np.random.default_rng(seed).shuffle(order)
 
     total = sum(sizes.values())
-    wanted = [f * total for f in fractions]
-    buckets: list[list[int]] = [[], [], []]
+    wanted = [fraction * total for fraction in fractions]
     filled = [0.0, 0.0, 0.0]
-    for cluster_id in order:
-        # Give the cluster to whichever split is furthest from its quota, so a
-        # single large cluster cannot swamp one split.
-        target = int(np.argmax([w - f for w, f in zip(wanted, filled)]))
-        buckets[target].append(cluster_id)
-        filled[target] += sizes[cluster_id]
-
     names = ("train", "validation", "test")
-    return {
-        sequence: names[next(i for i, b in enumerate(buckets) if cluster_id in b)]
-        for sequence, cluster_id in assignment.items()
-    }
+    placement: dict[int, str] = {}
+    for cluster_id in order:
+        choice = int(np.argmax([w - f for w, f in zip(wanted, filled)]))
+        placement[cluster_id] = names[choice]
+        filled[choice] += sizes[cluster_id]
+
+    return {sequence: placement[cluster_id] for sequence, cluster_id in assignment.items()}

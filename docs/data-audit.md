@@ -34,18 +34,19 @@ the dataset rather than to any model.
 within them. So a model that predicts each target's average affinity and ignores
 the peptide entirely already explains nearly half the signal.
 
-Measured directly, against an oracle that is given each held-out target's own
-mean and is therefore structurally incapable of ranking peptides:
+Measured on the 51 held-out targets, against an oracle given each target's own
+mean and therefore structurally incapable of ranking peptides:
 
-| control | pooled Spearman | per-target Spearman | skill |
-| --- | ---: | ---: | ---: |
-| peptide-blind oracle (target mean) | **+0.663** | **+0.000** | -0.046 |
-| global mean | undefined | +0.000 | -0.862 |
-| random | +0.011 | -0.004 | -6.079 |
-| perfect | +1.000 | +1.000 | +1.000 |
+| control | pooled | per-target | enrichment | skill |
+| --- | ---: | ---: | ---: | ---: |
+| peptide-blind oracle (target mean) | **+0.678** | **+0.000** | 1.00x | -0.055 |
+| peptide length alone | **+0.320** | +0.052 | 1.19x | -10.449 |
+| train mean (deployable constant) | undefined | +0.000 | 1.00x | -0.778 |
+| random | -0.046 | -0.052 | 0.97x | -6.317 |
+| perfect (ceiling) | +1.000 | +1.000 | 4.47x | +1.000 |
 
 The published leave-target-out result for this task is a pooled Spearman of
-0.530 (arXiv 2608.30175). A model that cannot rank peptides at all scores 0.663
+0.530 (arXiv 2608.30175). A model that cannot rank peptides at all scores 0.678
 on that metric. The published number therefore sits *below* the peptide-blind
 ceiling and cannot be read as evidence of within-target ranking ability.
 

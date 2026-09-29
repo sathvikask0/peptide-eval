@@ -1,84 +1,123 @@
-# Research Protocol: Evaluating Peptide Binders on Unseen Targets
+# Protocol: evaluating peptide binders on unseen targets
 
-**Status:** Locked after Data Feasibility Audit (2026-09-29)  
-**Dataset:** PPIKB Main Canonical Linear Subset  
-**Target Architecture:** Sequence-only contrastive protein-peptide models (PepPrCLIP / ESM-2 baselines)
+Dataset: PPIKB, canonical linear subset. See [data-audit.md](data-audit.md).
 
----
+Nothing here is locked. Each choice below says what it costs, so that changing
+one is a decision rather than a correction.
 
-## 1. Core Evaluation Questions
+## 1. The question
 
-### Primary Question
-Does a sequence-based peptide-protein model rank candidate peptides usefully within a previously unseen target protein?
+Does a sequence-based model rank candidate peptides usefully *within* a target
+protein it has not seen?
 
-### What Defines "Useful Ranking"?
-1. **Target-Disjoint Evaluation:** The model must evaluate targets whose exact sequence (and sequence cluster at $\sim 30\%$ identity) was never seen during training or validation.
-2. **Within-Target Discrimination:** Metrics must be calculated **per target** and then summarized across targets. A pooled correlation over all pairs conflates across-target baseline differences with true peptide prioritization.
-3. **Control Comparison:** The model must outperform simple controls (constant prediction, target-only mean, peptide-only mean, and random shuffle).
+Three things follow from the word "within".
 
-### Calibration Policy
-- **Probability Calibration is frozen as NO-GO for prospective yield claims.** PPIKB contains curated positive affinities from published literature. It lacks unbiased negative library screens. Any score-to-probability mapping derived from synthetic negatives would only reflect the synthetic negative ratio and will not be claimed as prospective wet-lab success probabilities.
+**Metrics are computed per target and then averaged.** A correlation pooled over
+all held-out pairs sums two abilities: knowing which targets bind tightly in
+general, and knowing which peptides suit one target. In this dataset 44.5% of
+affinity variance is between targets, so the pooled number is mostly the first
+ability. A peptide-blind oracle scores pooled +0.663 and per-target +0.000.
 
----
+**Held-out means the sequence family, not the sequence.** A two-residue variant
+of a training target binds much the same peptides. Exact-sequence exclusion,
+which the published benchmarks use, does not prevent that.
 
-## 2. Frozen Dataset & Preprocessing Specifications
+**Every model runs beside controls that cannot cheat.** A control that scores
+well is a defect in the metric, and we would rather find it before the model
+does.
 
-1. **Inclusion Criteria:**
-   - Standard 20 canonical amino acids for both target and peptide.
-   - Linear peptide backbones (`Linear/Cyclic == 'Linear'`).
-   - Target sequence length $\le 1024$ aa (matching native ESM-2 context).
-   - Target must have $\ge 10$ distinct peptides with measured affinities.
-2. **Deduplication Rule:**
-   - Multiple experimental measurements for the identical `(target_sequence, peptide_sequence)` pair are aggregated using the **geometric mean** of their nanomolar ($nM$) values.
-3. **Ground Truth Endpoint:**
-   - $-\log_{10}(K_d \text{ or } IC_{50} \text{ in } M)$ (higher value = stronger binding).
+## 2. Calibration
 
----
+**Hit-rate calibration: NO-GO.** PPIKB collects published binders and has no
+unbiased negative screen. A score-to-probability map fitted against synthetic
+negatives reports the synthetic ratio, not a wet-lab hit rate, and no such
+number will be claimed.
 
-## 3. Split & Homology Separation Strategy
+**Scale calibration: GO.** The labels are continuous affinities, so the question
+that survives is whether a predicted affinity lands on the right part of the
+scale for an unseen target. Measured as mean absolute error against that
+target's own median, reported as skill: 0 means the model knows nothing beyond
+the median, negative means it is confidently wrong about the scale.
 
-- **Target Clustering:** Cluster all eligible target sequences using connected-component graph clustering at sequence identity threshold $T \approx 0.30$ (k-mer Jaccard distance).
-- **Cluster-Disjoint Splits:**
-  - 5-Fold Target-Cluster Cross-Validation (or 60% Train / 20% Val / 20% Test by cluster).
-  - All measurements for all targets belonging to a cluster remain strictly within the same fold.
-  - No sequence from a test cluster may appear in training or validation.
-- **PDB Overlap Audit:** Cross-reference held-out test targets against known PDB co-crystal IDs to flag targets with structural training precedents in PepPrCLIP's training set.
+This reference is generous — it uses the held-out target's own labels, which a
+deployed model would not have. A model that cannot beat it has no scale
+knowledge at all.
 
----
+## 3. Dataset
 
-## 4. Evaluation Metrics & Statistical Analysis
+Inclusion: standard 20 residues for target and peptide, linear backbone, no
+modified residues, a usable Kd/Ki/IC50, and at least 10 distinct peptides per
+target. Repeat measurements of one pair are collapsed by geometric mean, which
+is the arithmetic mean in log space. Endpoint is `-log10(molar)`.
 
-### Within-Target Metrics (Calculated for each held-out test target $i$):
-1. **Spearman Rank Correlation ($\rho_i$):**
-   $$\rho_i = \text{SpearmanCorr}(\hat{s}_{i, :}, y_{i, :})$$
-   where $\hat{s}$ are model predicted scores and $y$ are true binding strengths.
-2. **Top-20% Hit Enrichment ($E_{20, i}$):**
-   Fraction of true top-20% tightest binders captured in the model's top-20% highest-ranked predictions relative to random selection.
-3. **Normalized Discounted Cumulative Gain (NDCG@k):**
-   Measures ranking quality with higher weight placed on correctly identifying the highest-affinity binders.
+Target length is deliberately *not* an inclusion criterion. ESM-2's 1024-token
+context is a property of one encoder, and excluding 19% of targets to suit it
+would let the encoder define the benchmark. Long targets stay in; how each model
+handles them is recorded with that model.
 
-### Aggregate Reporting:
-- **Macro-Averaged Spearman $\rho$:** Mean and median $\rho$ across all held-out targets.
-- **Distribution & Violin Plots:** Showing per-target variability and percentage of targets with $\rho > 0.3$, $\rho > 0.5$, and $\rho \le 0$.
-- **Resampling Uncertainty:** 95% bootstrap confidence intervals across targets (1,000 resamples).
-- **Pooled Metrics (Secondary):** Reported for comparison with prior literature (e.g. Tian et al.), explicitly noting the confounding effect of target baseline variation.
+Kd, Ki and IC50 are pooled, as the published benchmarks do. They are not the
+same quantity, and this ceiling belongs to the dataset rather than to any model.
 
----
+## 4. Splits
 
-## 5. Baselines and Negative Controls
+Targets are clustered by sequence identity from a global pairwise alignment,
+normalised by the shorter sequence so a domain contained in a larger protein
+counts as related. A 3-mer overlap prefilter skips pairs that cannot clear the
+threshold; it is an optimisation, not the similarity measure. Clusters are
+single-linkage connected components at 30% identity — deliberately aggressive,
+because the failure it prevents is testing on a near-copy.
 
-Every model evaluation must be run alongside the following controls under identical split conditions:
+Whole clusters go to train / validation / test at 60 / 15 / 25 by target count.
+Test gets the largest share because the headline number is an average over
+held-out targets, and its reliability is set by how many there are.
 
-1. **Random Control:** Uniform random score assignment (expectation: $\rho = 0.0$, Enrichment $= 1.0\times$).
-2. **Constant Predictor:** Predicts the global training mean for all pairs (ranking undefined; breaks ties randomly).
-3. **Target-Only Predictor:** Fits a regressor on target ESM-2 embeddings alone. Because predicted scores are identical for all peptides on a given target, within-target ranking is mathematically 0 / random, demonstrating that target-level affinity knowledge does not enable peptide ranking.
-4. **Peptide-Only Predictor:** Fits a regressor on peptide ESM-2 embeddings alone (predicts general "sticky" peptides). Evaluates how much ranking performance is driven purely by peptide composition regardless of the target.
-5. **K-Nearest Neighbors / Sequence Similarity:** Predicts affinity based on sequence similarity to observed training targets and peptides.
+Every split run reports the highest identity between any test and any train
+target. If that exceeds the clustering threshold, the split is broken.
 
----
+**Pending:** cross-reference held-out targets against PepPrCLIP's training set,
+to flag any target that model has structural precedent for. Needs the checkpoint,
+which is gated.
 
-## 6. Execution Protocol
+## 5. Metrics
 
-- All code and weights run locally on Apple Silicon (M3 Pro, 18 GB RAM) via PyTorch Metal Performance Shaders (`mps`).
-- Precompute target embeddings once to eliminate redundant transformer passes.
-- Maintain reproducibility by fixing random seeds (`seed = 42`) for all clustering, splitting, and bootstrapping operations.
+Per held-out target:
+
+- **Spearman correlation** between predicted score and measured affinity. A
+  prediction that is constant within a target orders nothing and scores 0, not
+  undefined — failing to discriminate is a result, not missing data.
+- **Top-20% enrichment**: of the tightest 20% of binders, the fraction the model
+  places in its own top 20%, divided by the 0.2 that random selection gives.
+  This is the number that maps onto a decision, because a screen tests a fixed
+  number of wells.
+- **Skill** against the target's own median, as in §2.
+
+Aggregated as the mean over targets, with a 95% bootstrap interval over targets
+(1,000 resamples), plus the share of targets with rho > 0.3, > 0.5, and <= 0.
+Pooled Spearman is reported alongside, only to show the gap.
+
+NDCG was considered and dropped: its discount function is an arbitrary choice
+here, and it answers nothing that Spearman and enrichment do not.
+
+## 6. Controls
+
+Run under identical splits with every model.
+
+1. **Random scores.** Expect rho 0, enrichment 1.0x.
+2. **Global constant.** Predicts the training mean. Scores exactly 0 per target,
+   by definition rather than by tie-breaking.
+3. **Target-only.** A regressor on target embeddings alone. Its prediction is
+   constant within a target, so per-target rho is 0 by construction while pooled
+   rho stays high. This is the control that indicts the pooled metric.
+4. **Peptide-only.** A regressor on peptide embeddings alone — how much ranking
+   comes from peptides being generically sticky, independent of the target.
+5. **Nearest neighbour.** Affinity of the most similar training pair. Tests
+   whether anything beyond retrieval is needed.
+
+Control 4 is the demanding one. A model only demonstrates target-conditioned
+ranking if it beats the peptide-only regressor, since that baseline already
+captures everything explainable by the peptide alone.
+
+## 7. Execution
+
+Local, Apple Silicon via `mps`. Target embeddings precomputed once. Seed 42 for
+clustering, splitting and bootstrapping.
