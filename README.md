@@ -120,6 +120,18 @@ The drop is 0.013, smaller than the 0.017 spread between seeds. The model scores
 almost as well on the wrong protein as the right one, so whatever it gained over
 the ablation is not target information: it is capacity on the peptide path.
 
+The attention weights say why. On a 888-residue target their entropy is 6.743
+nats against a uniform maximum of 6.789, which is an effective 849 residues
+attended out of 888. The most-weighted residue receives 0.0056 where uniform
+would give 0.0011. Different peptides' attention maps correlate at 0.993, so the
+weighting is not peptide-specific either: one fixed near-uniform average of the
+protein, applied to everything.
+
+The model was given the freedom to look anywhere in the target and learned to
+look everywhere equally, which is what a near-uniform softmax converges to when
+no position is more predictive than another. So attention did not fail to
+recover what pooling discarded. Attention re-derived pooling.
+
 Pooling was not the reason. Giving a model direct residue-level access to the
 correct target buys it nothing over the incorrect one. Three seeds, which is
 thin, but the pattern holds in each of them.
@@ -127,6 +139,29 @@ thin, but the pattern holds in each of them.
 Every model in this repository now fails the same way, at three levels of
 capacity and two of granularity: linear, ensemble, and attention; pooled and
 per-residue. None uses the identity of the protein it is binding to.
+
+## Is 122 training targets simply too few?
+
+If the target signal were present but under-trained, adding targets should grow
+it. The quantity to watch is not the raw score, most of which comes from the
+peptide path and does not depend on how many targets were seen, but the gap
+between scoring a held-out target with its own residues and with another
+target's. That difference is target information and nothing else.
+
+| training targets | pairs | target signal (correct - wrong) |
+| ---: | ---: | ---: |
+| 30 | 1,070 | +0.002 +- 0.013 |
+| 60 | 1,714 | +0.007 +- 0.022 |
+| 90 | 2,748 | +0.002 +- 0.018 |
+| 122 | 3,788 | +0.012 +- 0.015 |
+
+Five seeds each. Four times the training targets moves the signal by +0.010
+against a seed spread of +-0.016, and the trend is not monotone. The raw score
+does not improve either: +0.098, +0.091, +0.067, +0.116.
+
+This range cannot separate "absent" from "needs ten times more than we have",
+and at a standard error near 0.007 per point it could only detect a signal of
+about 0.015. Within those limits, more targets did not help.
 
 No encoder here has been fine-tuned. That is the remaining untested direction,
 and it should be run against these same controls.
