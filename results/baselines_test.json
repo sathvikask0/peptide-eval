@@ -1,0 +1,58 @@
+[
+  {
+    "model": "random",
+    "pooled_spearman": -0.04553038133164641,
+    "macro_spearman": -0.051847006042351686,
+    "macro_enrichment": 0.9695859454893068,
+    "macro_skill": -6.317028262859191,
+    "targets_scored": 51
+  },
+  {
+    "model": "peptide length",
+    "pooled_spearman": 0.3199393220860926,
+    "macro_spearman": 0.05237349764132686,
+    "macro_enrichment": 1.1929275043350673,
+    "macro_skill": -10.44857332355521,
+    "targets_scored": 51
+  },
+  {
+    "model": "peptide-blind oracle",
+    "pooled_spearman": 0.6776997868769699,
+    "macro_spearman": 0.0,
+    "macro_enrichment": 1.0,
+    "macro_skill": -0.054529437703580805,
+    "targets_scored": 51
+  },
+  {
+    "model": "esm2 ridge target_only",
+    "pooled_spearman": 0.10157040390349478,
+    "macro_spearman": 0.0,
+    "macro_enrichment": 1.0,
+    "macro_skill": -2.9891643611997285,
+    "targets_scored": 51
+  },
+  {
+    "model": "esm2 ridge peptide_only",
+    "pooled_spearman": 0.23008504693312967,
+    "macro_spearman": 0.09538109530119572,
+    "macro_enrichment": 1.4562417189097863,
+    "macro_skill": -0.8669500290813952,
+    "targets_scored": 51
+  },
+  {
+    "model": "esm2 ridge concat",
+    "pooled_spearman": 0.14832736881994202,
+    "macro_spearman": 0.09288981948205441,
+    "macro_enrichment": 1.4701959672757992,
+    "macro_skill": -1.2946579939656584,
+    "targets_scored": 51
+  },
+  {
+    "model": "esm2 ridge interaction",
+    "pooled_spearman": 0.1868322426876405,
+    "macro_spearman": 0.07099943033625547,
+    "macro_enrichment": 1.2447113289760348,
+    "macro_skill": -1.1194869395983789,
+    "targets_scored": 51
+  }
+]

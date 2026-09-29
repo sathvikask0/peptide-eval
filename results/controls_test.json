@@ -1,0 +1,42 @@
+[
+  {
+    "control": "peptide-blind oracle",
+    "pooled_spearman": 0.6776997868769699,
+    "macro_spearman": 0.0,
+    "macro_enrichment": 1.0,
+    "macro_skill": -0.054529437703580805,
+    "targets_scored": 51
+  },
+  {
+    "control": "train mean (deployable)",
+    "pooled_spearman": null,
+    "macro_spearman": 0.0,
+    "macro_enrichment": 1.0,
+    "macro_skill": -0.778099108295126,
+    "targets_scored": 51
+  },
+  {
+    "control": "random",
+    "pooled_spearman": -0.04553038133164641,
+    "macro_spearman": -0.051847006042351686,
+    "macro_enrichment": 0.9695859454893068,
+    "macro_skill": -6.317028262859191,
+    "targets_scored": 51
+  },
+  {
+    "control": "peptide length",
+    "pooled_spearman": 0.3199393220860926,
+    "macro_spearman": 0.05237349764132686,
+    "macro_enrichment": 1.1929275043350673,
+    "macro_skill": -10.44857332355521,
+    "targets_scored": 51
+  },
+  {
+    "control": "perfect (ceiling)",
+    "pooled_spearman": 0.9999999999999999,
+    "macro_spearman": 1.0,
+    "macro_enrichment": 4.470915032679739,
+    "macro_skill": 1.0,
+    "targets_scored": 51
+  }
+]

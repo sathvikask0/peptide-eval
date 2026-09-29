@@ -1,0 +1,62 @@
+[
+  {
+    "model": "cross-attention",
+    "seed": 0,
+    "val": 0.33325001532997217,
+    "pooled_spearman": 0.3251525940154614,
+    "macro_spearman": 0.151967484846865,
+    "macro_enrichment": 1.424401204926415,
+    "macro_skill": -0.6708889133116271,
+    "targets_scored": 51
+  },
+  {
+    "model": "cross-attention",
+    "seed": 1,
+    "val": 0.32637811353230367,
+    "pooled_spearman": 0.3522490289001982,
+    "macro_spearman": 0.12315654833551173,
+    "macro_enrichment": 1.3384369303276866,
+    "macro_skill": -0.7998766685299611,
+    "targets_scored": 51
+  },
+  {
+    "model": "cross-attention",
+    "seed": 2,
+    "val": 0.337776304446052,
+    "pooled_spearman": 0.29115510264177563,
+    "macro_spearman": 0.11157450719507601,
+    "macro_enrichment": 1.315596571962118,
+    "macro_skill": -0.7068313589952229,
+    "targets_scored": 51
+  },
+  {
+    "model": "peptide only (ablated)",
+    "seed": 0,
+    "val": 0.3143137865870864,
+    "pooled_spearman": 0.29207863750737706,
+    "macro_spearman": 0.08001711609569914,
+    "macro_enrichment": 1.4369771241830065,
+    "macro_skill": -0.6947251261943282,
+    "targets_scored": 51
+  },
+  {
+    "model": "peptide only (ablated)",
+    "seed": 1,
+    "val": 0.32996757246495734,
+    "pooled_spearman": 0.3191838803068395,
+    "macro_spearman": 0.10525728127142053,
+    "macro_enrichment": 1.301933551198257,
+    "macro_skill": -0.6157483581902988,
+    "targets_scored": 51
+  },
+  {
+    "model": "peptide only (ablated)",
+    "seed": 2,
+    "val": 0.33461141753872553,
+    "pooled_spearman": 0.3302145569583356,
+    "macro_spearman": 0.1184943792798692,
+    "macro_enrichment": 1.1965822995865012,
+    "macro_skill": -0.6960799098985093,
+    "targets_scored": 51
+  }
+]

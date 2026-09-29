@@ -1,0 +1,34 @@
+[
+  {
+    "model": "forest target_only",
+    "pooled_spearman": 0.035061665891963946,
+    "macro_spearman": 0.0,
+    "macro_enrichment": 1.0,
+    "macro_skill": -0.867295293468357,
+    "targets_scored": 51
+  },
+  {
+    "model": "forest peptide_only",
+    "pooled_spearman": 0.34024163780892364,
+    "macro_spearman": 0.07585794671941572,
+    "macro_enrichment": 1.1303620337023697,
+    "macro_skill": -0.6025505538230462,
+    "targets_scored": 51
+  },
+  {
+    "model": "forest concat",
+    "pooled_spearman": 0.18529308679230636,
+    "macro_spearman": 0.02809659889610013,
+    "macro_enrichment": 1.2869087635054022,
+    "macro_skill": -0.7910097533943186,
+    "targets_scored": 51
+  },
+  {
+    "model": "forest interaction",
+    "pooled_spearman": 0.1932565224535056,
+    "macro_spearman": 0.11015819749185356,
+    "macro_enrichment": 1.311838179716331,
+    "macro_skill": -0.767728455634763,
+    "targets_scored": 51
+  }
+]

@@ -363,6 +363,58 @@ context are chunked and pooled, not truncated.</p>
 <p><strong>Pooled Kd, Ki and IC50.</strong> As the published benchmarks do. They are not the
 same quantity, and this ceiling belongs to the dataset rather than to any model.</p>
 
+<hr>
+
+<h2><span class="num">09</span>Everything in the repository</h2>
+
+<p>Each table in this report is produced by one script, run against the raw release.
+The result files hold the exact numbers, including the per-target values that are
+averaged in the tables above.</p>
+
+<h3>What produced each table</h3>
+<div class="scroll"><table>
+<thead><tr><th>section</th><th>script</th><th>output</th></tr></thead>
+<tbody>
+<tr><td>&sect;01 controls</td><td><a href="https://github.com/sathvikask0/peptide-eval/blob/main/scripts/run_controls.py">run_controls.py</a></td><td><a href="https://github.com/sathvikask0/peptide-eval/blob/main/results/controls_test.json">controls_test.json</a></td></tr>
+<tr><td>&sect;02 filters and cohort</td><td><a href="https://github.com/sathvikask0/peptide-eval/blob/main/scripts/control_check.py">control_check.py</a></td><td>&mdash;</td></tr>
+<tr><td>&sect;02 clusters and split</td><td><a href="https://github.com/sathvikask0/peptide-eval/blob/main/scripts/build_splits.py">build_splits.py</a></td><td>&mdash;</td></tr>
+<tr><td>&sect;03 ridge probes</td><td><a href="https://github.com/sathvikask0/peptide-eval/blob/main/scripts/run_baselines.py">run_baselines.py</a></td><td><a href="https://github.com/sathvikask0/peptide-eval/blob/main/results/baselines_test.json">baselines_test.json</a></td></tr>
+<tr><td>&sect;03 confidence intervals</td><td><a href="https://github.com/sathvikask0/peptide-eval/blob/main/scripts/bootstrap.py">bootstrap.py</a></td><td>&mdash;</td></tr>
+<tr><td>&sect;04 random forest</td><td><a href="https://github.com/sathvikask0/peptide-eval/blob/main/scripts/run_forest.py">run_forest.py</a></td><td><a href="https://github.com/sathvikask0/peptide-eval/blob/main/results/forest_test.json">forest_test.json</a></td></tr>
+<tr><td>&sect;04 cross-attention</td><td><a href="https://github.com/sathvikask0/peptide-eval/blob/main/scripts/run_attention.py">run_attention.py</a></td><td><a href="https://github.com/sathvikask0/peptide-eval/blob/main/results/attention_test.json">attention_test.json</a></td></tr>
+<tr><td>&sect;04 fine-tuning</td><td><a href="https://github.com/sathvikask0/peptide-eval/blob/main/scripts/run_finetune.py">run_finetune.py</a></td><td><a href="https://github.com/sathvikask0/peptide-eval/blob/main/results/finetune_test.json">finetune_test.json</a></td></tr>
+<tr><td>&sect;05 scaling sweep</td><td><a href="https://github.com/sathvikask0/peptide-eval/blob/main/scripts/scaling.py">scaling.py</a></td><td><a href="https://github.com/sathvikask0/peptide-eval/blob/main/results/scaling.json">scaling.json</a></td></tr>
+</tbody></table></div>
+
+<h3>The library</h3>
+<div class="scroll"><table>
+<thead><tr><th>module</th><th>what it holds</th></tr></thead>
+<tbody>
+<tr><td><a href="https://github.com/sathvikask0/peptide-eval/blob/main/src/peptide_eval/data.py">data.py</a></td><td>every filter applied to PPIKB, and what each one costs</td></tr>
+<tr><td><a href="https://github.com/sathvikask0/peptide-eval/blob/main/src/peptide_eval/cluster.py">cluster.py</a></td><td>the relatedness rule, and why coverage rather than identity</td></tr>
+<tr><td><a href="https://github.com/sathvikask0/peptide-eval/blob/main/src/peptide_eval/metrics.py">metrics.py</a></td><td>per-target Spearman, enrichment, skill, and pooled for contrast</td></tr>
+<tr><td><a href="https://github.com/sathvikask0/peptide-eval/blob/main/src/peptide_eval/embed.py">embed.py</a></td><td>frozen ESM-2, mean-pooled, chunked for long targets</td></tr>
+<tr><td><a href="https://github.com/sathvikask0/peptide-eval/blob/main/src/peptide_eval/residues.py">residues.py</a></td><td>residue-level caching as a flat array with offsets</td></tr>
+<tr><td><a href="https://github.com/sathvikask0/peptide-eval/blob/main/src/peptide_eval/models.py">models.py</a></td><td>the four feature sets, ridge and forest probes</td></tr>
+<tr><td><a href="https://github.com/sathvikask0/peptide-eval/blob/main/src/peptide_eval/attention.py">attention.py</a></td><td>the cross-attention scorer and its target ablation</td></tr>
+<tr><td><a href="https://github.com/sathvikask0/peptide-eval/blob/main/src/peptide_eval/finetune.py">finetune.py</a></td><td>the same head with ESM-2's top layers unfrozen</td></tr>
+</tbody></table></div>
+
+<h3>Written up in more detail</h3>
+<ul>
+<li><a href="https://github.com/sathvikask0/peptide-eval/blob/main/README.md">README</a> &mdash; the same findings, in the repository</li>
+<li><a href="https://github.com/sathvikask0/peptide-eval/blob/main/docs/protocol.md">protocol.md</a> &mdash; what was decided before running anything, and what each choice costs</li>
+<li><a href="https://github.com/sathvikask0/peptide-eval/blob/main/docs/data-audit.md">data-audit.md</a> &mdash; the filter trace, checksums, and the GO / NO-GO calls</li>
+<li><a href="https://github.com/sathvikask0/peptide-eval/commits/main">commit history</a> &mdash; including the two results that were retracted</li>
+</ul>
+
+<h3>Reproducing it</h3>
+<p>Raw data is not committed. Fetch <code>Affinity Dataset(main).xlsx</code> from the PPIKB
+release into <code>data/raw/</code> &mdash; the audit records its checksum &mdash; then run the
+scripts in the order of the table above. Everything runs on a laptop; the
+heaviest step is encoding 203 targets and 4,909 peptides with ESM-2, which takes
+about three minutes on an M3.</p>
+
 <footer>
 <p>Code, data pipeline and every number above:
 <a href="https://github.com/sathvikask0/peptide-eval">github.com/sathvikask0/peptide-eval</a>.

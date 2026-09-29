@@ -1,0 +1,54 @@
+[
+  {
+    "model": "finetuned cross-attention",
+    "setting": "2 layers, lr 1e-5",
+    "seed": 0,
+    "val": 0.31146914123903474,
+    "wrong_target": 0.05880172460314793,
+    "epochs": 6,
+    "pooled_spearman": 0.3423353791580585,
+    "macro_spearman": 0.05448767736646458,
+    "macro_enrichment": 1.4290385042906053,
+    "macro_skill": -0.7614348379214906,
+    "targets_scored": 51
+  },
+  {
+    "model": "finetuned cross-attention",
+    "setting": "1 layer, lr 2e-6",
+    "seed": 0,
+    "val": 0.3395472259218647,
+    "wrong_target": 0.03932755380222102,
+    "epochs": 6,
+    "pooled_spearman": 0.29247172665455334,
+    "macro_spearman": 0.04213751715842796,
+    "macro_enrichment": 1.3024072962518343,
+    "macro_skill": -0.8762501512016388,
+    "targets_scored": 51
+  },
+  {
+    "model": "finetuned cross-attention",
+    "setting": "1 layer, lr 2e-6",
+    "seed": 1,
+    "val": 0.34362222137047255,
+    "wrong_target": 0.08618885370966226,
+    "epochs": 5,
+    "pooled_spearman": 0.3199281523181727,
+    "macro_spearman": 0.10067224475623691,
+    "macro_enrichment": 1.4360947712418302,
+    "macro_skill": -0.6785737913901739,
+    "targets_scored": 51
+  },
+  {
+    "model": "finetuned peptide-only",
+    "setting": "1 layer, lr 2e-6",
+    "seed": 0,
+    "val": 0.32427322112832024,
+    "wrong_target": null,
+    "epochs": 5,
+    "pooled_spearman": 0.30610721592293,
+    "macro_spearman": 0.059666853336152174,
+    "macro_enrichment": 1.3296459694989107,
+    "macro_skill": -0.6399681124536439,
+    "targets_scored": 51
+  }
+]
